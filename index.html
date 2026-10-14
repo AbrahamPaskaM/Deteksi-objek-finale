@@ -3,106 +3,133 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Object Scanner</title>
+        <meta name="theme-color" content="#090a0d">
+        <title>AI Scanner</title>
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
         <style>
             :root {
-                color-scheme: light;
-                --ink: #192821;
-                --muted: #66766d;
-                --line: #d5dfd8;
-                --ground: #f0f4f0;
-                --paper: #ffffff;
-                --green: #14795d;
-                --green-dark: #0b5b45;
+                color-scheme: dark;
+                font-family: "DM Sans", "Segoe UI", sans-serif;
+                background: #090a0d;
+                color: #f5f6f8;
+                --muted: #a2a5ae;
+                --line: rgb(255 255 255 / 12%);
+                --accent: #50e3c2;
+                --panel: #111318;
             }
             * { box-sizing: border-box; }
-            body { margin: 0; background: var(--ground); color: var(--ink); font-family: "DM Sans", "Segoe UI", sans-serif; }
-            button { min-height: 40px; padding: 9px 14px; border: 1px solid var(--line); border-radius: 5px; background: var(--paper); color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
-            button:hover:not(:disabled) { border-color: var(--green); }
-            button:focus-visible { outline: 3px solid #54b998; outline-offset: 2px; }
-            button:disabled { cursor: not-allowed; opacity: 0.48; }
-            .page-shell { width: min(1440px, 100%); margin: auto; padding: 30px clamp(20px, 4vw, 56px) 48px; }
-            .topbar { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
-            .eyebrow { margin: 0 0 7px; color: var(--green); font-size: 12px; font-weight: 700; }
-            h1, h2, p { margin-top: 0; }
-            h1 { margin-bottom: 5px; font-size: 30px; line-height: 1.15; }
-            h2 { margin-bottom: 0; font-size: 20px; }
-            .intro { margin-bottom: 0; color: var(--muted); font-size: 14px; }
-            .mode-badge, .threshold-badge, .count-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 11px; border: 1px solid var(--line); border-radius: 5px; background: var(--paper); color: var(--muted); font-size: 12px; font-weight: 700; white-space: nowrap; }
-            .mode-dot { width: 8px; aspect-ratio: 1; border-radius: 50%; background: var(--green); }
-            .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(290px, 0.8fr); gap: 34px; padding-top: 28px; }
-            .section-heading, .data-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
-            .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
-            .camera-help { margin: -4px 0 12px; color: var(--muted); font-size: 12px; }
-            #start-ai { border-color: var(--green); background: var(--green); color: white; }
-            #start-ai:hover:not(:disabled) { background: var(--green-dark); }
-            #stop-ai, #stop-camera { color: #8b3e32; }
-            .camera-stage { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border: 1px solid #293b32; border-radius: 6px; background: #101713; }
+            body { min-width: 320px; min-height: 100vh; min-height: 100dvh; margin: 0; background: #090a0d; color: #f5f6f8; }
+            button { color: inherit; font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+            button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+            button:disabled { cursor: not-allowed; opacity: .42; }
+            [hidden] { display: none !important; }
+            .page-shell { position: relative; display: flex; flex-direction: column; width: min(100%, 480px); height: 100vh; height: 100dvh; min-height: 540px; margin: auto; overflow: hidden; background: #101116; box-shadow: 0 0 70px rgb(0 0 0 / 55%); }
+            .topbar { z-index: 2; display: flex; flex: 0 0 62px; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 18px; background: #101116; }
+            .brand { display: flex; align-items: center; gap: 9px; }
+            .brand-mark { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 10px; background: linear-gradient(145deg, #54ecd0, #56aaf4); color: #101116; font-size: 18px; font-weight: 800; }
+            h1, h2, p { margin: 0; }
+            h1 { font-size: 16px; font-weight: 700; letter-spacing: -.3px; }
+            .intro, .eyebrow, .threshold-badge, .camera-help { display: none; }
+            .mode-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 9px; border: 1px solid var(--line); border-radius: 999px; color: #d5d6db; font-size: 10px; font-weight: 700; }
+            .mode-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 9px var(--accent); }
+            .dashboard-grid { position: relative; display: flex; flex: 1; min-height: 0; padding-bottom: 68px; }
+            .camera-panel { position: relative; display: flex; flex: 1; min-height: 0; }
+            .section-heading { display: none; }
+            .controls { position: absolute; z-index: 3; top: 50%; right: 14px; display: flex; flex-direction: column; gap: 13px; transform: translateY(-50%); }
+            .control-button { display: grid; justify-items: center; gap: 4px; width: 48px; padding: 0; border: 0; background: transparent; text-align: center; }
+            .control-icon { display: grid; width: 40px; height: 40px; place-items: center; border: 1px solid rgb(255 255 255 / 22%); border-radius: 50%; background: rgb(17 19 24 / 82%); color: #fff; backdrop-filter: blur(8px); }
+            .control-icon svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+            .control-label { color: #f3f3f6; font-size: 9px; font-weight: 600; text-shadow: 0 1px 4px #000; }
+            .control-button[aria-pressed="true"] .control-icon, #stop-ai .control-icon { border-color: var(--accent); background: #164f48; color: var(--accent); }
+            #start-ai .control-icon { background: #f6f7f8; color: #111318; }
+            .camera-stage { position: absolute; inset: 0; overflow: hidden; background: radial-gradient(ellipse at 50% 45%, #32323b 0, #24242c 47%, #17181e 100%); }
             #video, #canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-            #video { object-fit: contain; }
+            #video { object-fit: fill; }
             #canvas { pointer-events: none; }
-            #overlay-msg { position: absolute; inset: 0; display: grid; align-content: center; justify-items: center; gap: 12px; padding: 20px; color: white; background: rgb(13 24 18 / 78%); text-align: center; }
+            #overlay-msg { position: absolute; inset: 0; display: grid; align-content: center; justify-items: center; gap: 12px; padding: 24px 80px 150px 24px; color: #f6f6f8; background: rgb(18 18 23 / 30%); text-align: center; }
             #overlay-msg[hidden] { display: none; }
-            #overlay-text { margin: 0; }
-            .spinner { width: 28px; aspect-ratio: 1; border: 3px solid #ffffff66; border-top-color: #43c99a; border-radius: 50%; animation: spin 0.8s linear infinite; }
-            #app-status { min-height: 22px; margin: 10px 0 0; color: var(--muted); font-size: 13px; }
-            .data-section { min-width: 0; padding-left: 26px; border-left: 1px solid var(--line); }
-            .data-header { align-items: end; }
-            .count-badge { color: var(--green-dark); }
-            .helper { margin: -5px 0 14px; color: var(--muted); font-size: 13px; }
-            #data-list { display: grid; max-height: 540px; overflow: auto; }
-            .log-item { display: grid; gap: 5px; padding: 13px 4px; border-top: 1px solid var(--line); }
-            .log-item strong { font-size: 14px; }
-            .log-time { color: var(--muted); font-size: 12px; }
-            .empty-state { padding: 20px 0; color: var(--muted); font-size: 14px; }
+            #overlay-text { margin: 0; font-size: 13px; }
+            .spinner { width: 28px; aspect-ratio: 1; border: 3px solid #ffffff66; border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+            .detection-summary { position: absolute; z-index: 2; right: 76px; bottom: 20px; left: 16px; display: grid; gap: 7px; text-shadow: 0 1px 5px #000; pointer-events: none; }
+            #detection-title { font-size: 15px; font-weight: 700; }
+            #detection-detail { color: #e1e1e5; font-size: 11px; }
+            #detection-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+            .detection-chip { padding: 4px 8px; border: 1px solid rgb(80 227 194 / 55%); border-radius: 999px; background: rgb(13 78 64 / 82%); color: #b6ffe9; font-size: 9px; font-weight: 700; }
+            #app-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+            .data-section { position: absolute; inset: 0; z-index: 4; display: flex; flex-direction: column; min-width: 0; padding: 22px 20px; background: #101116; }
+            .data-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+            .data-header h2 { font-size: 21px; }
+            .count-badge { color: var(--accent); font-size: 12px; font-weight: 700; }
+            .helper { margin: 0 0 18px; color: var(--muted); font-size: 12px; }
+            #data-list { display: grid; align-content: start; max-height: 100%; overflow: auto; }
+            .log-item { display: grid; gap: 6px; padding: 15px 0; border-top: 1px solid var(--line); }
+            .log-item strong { font-size: 13px; line-height: 1.5; }
+            .log-time { color: var(--muted); font-size: 11px; }
+            .empty-state { padding: 24px 0; color: var(--muted); font-size: 13px; }
+            .bottom-nav { position: absolute; z-index: 5; right: 0; bottom: 0; left: 0; display: grid; height: 68px; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--line); background: rgb(13 14 18 / 96%); padding-bottom: env(safe-area-inset-bottom); }
+            .nav-button { position: relative; display: grid; align-content: center; justify-items: center; gap: 3px; border: 0; background: transparent; color: #8f929b; font-size: 9px; font-weight: 600; }
+            .nav-button svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+            .nav-button[aria-current="page"] { color: white; }
+            .nav-button[aria-current="page"] svg { color: var(--accent); }
+            .nav-count { position: absolute; top: 9px; left: calc(50% + 8px); min-width: 14px; padding: 2px 4px; border-radius: 99px; background: #ed3c71; color: #fff; font-size: 8px; }
             @keyframes spin { to { transform: rotate(360deg); } }
-            @media (max-width: 820px) {
-                .dashboard-grid { grid-template-columns: minmax(0, 1fr); gap: 28px; }
-                .data-section { padding: 22px 0 0; border-top: 1px solid var(--line); border-left: 0; }
-                #data-list { max-height: 280px; }
+            @media (min-width: 700px) {
+                body { display: grid; place-items: center; padding: 24px; }
+                .page-shell { height: min(900px, calc(100dvh - 48px)); min-height: 540px; border: 1px solid #282a32; border-radius: 30px; }
             }
-            @media (max-width: 520px) {
-                .page-shell { padding: 22px 16px 32px; }
-                .topbar { align-items: start; flex-direction: column; }
-                h1 { font-size: 26px; }
-                .section-heading { align-items: start; flex-direction: column; }
-                .controls button { flex: 1 1 calc(50% - 8px); }
-                .camera-stage { aspect-ratio: 4 / 3; }
+            @media (max-height: 620px) {
+                .topbar { flex-basis: 54px; }
+                .controls { gap: 7px; }
+                .control-icon { width: 35px; height: 35px; }
+                .bottom-nav { height: 58px; }
+                .dashboard-grid { padding-bottom: 58px; }
             }
         </style>
     </head>
     <body>
         <div class="page-shell">
             <header class="topbar">
-                <div>
-                    <p class="eyebrow">VISION INVENTORY / LIVE SCANNER</p>
-                    <h1>Deteksi Objek</h1>
-                    <p class="intro">COCO-SSD mengenali orang dan objek umum melalui kamera.</p>
+                <div class="brand">
+                    <span class="brand-mark" aria-hidden="true">A</span>
+                    <h1>AI Scanner</h1>
                 </div>
-                <span id="database-mode" class="mode-badge"><span class="mode-dot"></span> Menghubungkan database</span>
+                <span id="database-mode" class="mode-badge"><span class="mode-dot"></span> DEMO</span>
             </header>
 
             <main class="dashboard-grid">
                 <section class="camera-panel" aria-labelledby="camera-title">
                     <div class="section-heading">
-                        <div>
-                            <p class="eyebrow">LIVE FEED</p>
-                            <h2 id="camera-title">Kamera & deteksi</h2>
-                        </div>
+                        <h2 id="camera-title">Kamera & deteksi</h2>
                         <span class="threshold-badge">Confidence minimal 40%</span>
                     </div>
                     <div class="controls">
-                        <button id="start-camera" type="button">Aktifkan kamera</button>
-                        <button id="stop-camera" type="button">Matikan kamera</button>
-                        <button id="switch-camera" type="button" disabled>Kamera depan</button>
-                        <button id="toggle-torch" type="button" aria-pressed="false" disabled>Flash: Nonaktif</button>
-                        <button id="start-ai" type="button">Start AI</button>
-                        <button id="stop-ai" type="button" disabled>Stop AI</button>
+                        <button id="start-camera" class="control-button" type="button" aria-label="Aktifkan kamera">
+                            <span class="control-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h3l2-2h6l2 2h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.5"/></svg></span>
+                            <span class="control-label">Kamera</span>
+                        </button>
+                        <button id="stop-camera" class="control-button" type="button" aria-label="Matikan kamera" hidden>
+                            <span class="control-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h3l2-2h6l2 2h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"/><path d="m9 9 6 8m0-8-6 8"/></svg></span>
+                            <span class="control-label">Matikan</span>
+                        </button>
+                        <button id="switch-camera" class="control-button" type="button" aria-label="Ganti kamera" disabled>
+                            <span class="control-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9A7 7 0 0 1 18 7l2 5M4 12l2 5a7 7 0 0 0 12.4-2"/></svg></span>
+                            <span class="control-label">Balik</span>
+                        </button>
+                        <button id="start-ai" class="control-button" type="button" aria-label="Mulai deteksi AI">
+                            <span class="control-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1m0-12.8-2.1 2.1m-8.6 8.6-2.1 2.1"/><circle cx="12" cy="12" r="4"/></svg></span>
+                            <span class="control-label">AI Scan</span>
+                        </button>
+                        <button id="stop-ai" class="control-button" type="button" aria-label="Hentikan deteksi AI" disabled hidden>
+                            <span class="control-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></span>
+                            <span class="control-label">Stop AI</span>
+                        </button>
+                        <button id="toggle-torch" class="control-button" type="button" aria-label="Aktifkan flash" aria-pressed="false" disabled>
+                            <span class="control-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 2 5 13h6l-1 9 9-12h-6l1-8Z"/></svg></span>
+                            <span class="control-label">Flash</span>
+                        </button>
                     </div>
-                    <p class="camera-help">Izinkan akses kamera. Flash tersedia jika didukung perangkat; halaman harus dibuka melalui HTTPS atau localhost.</p>
                     <div id="camera-container" class="camera-stage">
                         <video id="video" autoplay playsinline muted></video>
                         <canvas id="canvas"></canvas>
@@ -111,13 +138,17 @@
                             <p id="overlay-text"></p>
                         </div>
                     </div>
+                    <div class="detection-summary" aria-live="polite">
+                        <h2 id="detection-title">Siap mendeteksi</h2>
+                        <p id="detection-detail">Aktifkan AI Scan untuk mulai</p>
+                        <div id="detection-chips"></div>
+                    </div>
                     <p id="app-status" role="status" aria-live="polite">Menyiapkan aplikasi...</p>
                 </section>
 
-                <aside class="data-section" aria-labelledby="data-title">
+                <section class="data-section" aria-labelledby="data-title" hidden>
                     <header class="data-header">
                         <div>
-                            <p class="eyebrow">REAL-TIME</p>
                             <h2 id="data-title">Riwayat deteksi</h2>
                         </div>
                         <span class="count-badge"><span id="log-count">0</span> item</span>
@@ -126,8 +157,19 @@
                     <div id="data-list" aria-live="polite">
                         <p class="empty-state">Belum ada objek terdeteksi.</p>
                     </div>
-                </aside>
+                </section>
             </main>
+            <nav class="bottom-nav" aria-label="Navigasi utama">
+                <button class="nav-button" type="button" data-view="scanner" aria-current="page">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></svg>
+                    <span>Scanner</span>
+                </button>
+                <button class="nav-button" type="button" data-view="history">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v15H4zM8 9h8m-8 4h8m-8 4h5"/></svg>
+                    <span>Log Data</span>
+                    <span class="nav-count" id="nav-log-count" hidden>0</span>
+                </button>
+            </nav>
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
@@ -142,10 +184,15 @@
             const logCount = document.getElementById("log-count");
             const appStatus = document.getElementById("app-status");
             const databaseMode = document.getElementById("database-mode");
+            const cameraPanel = document.querySelector(".camera-panel");
+            const dataSection = document.querySelector(".data-section");
+            const navLogCount = document.getElementById("nav-log-count");
 
             function renderDetections(records) {
                 dataList.replaceChildren();
                 logCount.textContent = String(records.length);
+                navLogCount.textContent = String(records.length);
+                navLogCount.hidden = records.length === 0;
 
                 if (records.length === 0) {
                     const emptyMessage = document.createElement("p");
@@ -220,6 +267,17 @@
             });
             document.getElementById("start-ai").addEventListener("click", startAI);
             document.getElementById("stop-ai").addEventListener("click", stopAI);
+            document.querySelectorAll(".nav-button").forEach((button) => {
+                button.addEventListener("click", () => {
+                    const isHistory = button.dataset.view === "history";
+                    cameraPanel.hidden = isHistory;
+                    dataSection.hidden = !isHistory;
+                    document.querySelectorAll(".nav-button").forEach((navButton) => {
+                        if (navButton === button) navButton.setAttribute("aria-current", "page");
+                        else navButton.removeAttribute("aria-current");
+                    });
+                });
+            });
 
             void initApp();
         </script>

@@ -21,6 +21,9 @@ const overlayText = document.getElementById("overlay-text");
 const startButton = document.getElementById("start-ai");
 const stopButton = document.getElementById("stop-ai");
 const appStatus = document.getElementById("app-status");
+const detectionTitle = document.getElementById("detection-title");
+const detectionDetail = document.getElementById("detection-detail");
+const detectionChips = document.getElementById("detection-chips");
 
 let model = null;
 let modelLoadPromise = null;
@@ -50,6 +53,30 @@ function syncCanvasSize() {
 		canvas.height = video.videoHeight;
 		cameraContainer.style.aspectRatio = `${video.videoWidth} / ${video.videoHeight}`;
 	}
+}
+
+function updateDetectionSummary(predictions) {
+	if (predictions.length === 0) {
+		detectionTitle.textContent = isAIDetecting ? "Mencari objek..." : "Siap mendeteksi";
+		detectionDetail.textContent = isAIDetecting
+			? "Arahkan kamera ke objek"
+			: "Aktifkan AI Scan untuk mulai";
+		detectionChips.replaceChildren();
+		return;
+	}
+
+	const bestPrediction = predictions.reduce((best, prediction) =>
+		prediction.score > best.score ? prediction : best
+	);
+	detectionTitle.textContent = bestPrediction.class;
+	detectionDetail.textContent = `${predictions.length} objek terdeteksi · Confidence ${Math.round(bestPrediction.score * 100)}%`;
+	detectionChips.replaceChildren();
+	predictions.slice(0, 3).forEach((prediction) => {
+		const chip = document.createElement("span");
+		chip.className = "detection-chip";
+		chip.textContent = `${prediction.class} · ${Math.round(prediction.score * 100)}%`;
+		detectionChips.appendChild(chip);
+	});
 }
 
 async function loadCocoModel() {
@@ -126,6 +153,7 @@ async function detectLoop() {
 			TARGET_CLASSES.has(prediction.class) && prediction.score >= MIN_CONFIDENCE
 		);
 		drawPredictions(targets);
+		updateDetectionSummary(targets);
 
 		const now = Date.now();
 		if (targets.length > 0 && !isSaving && now - lastSaveTime >= SAVE_THROTTLE_MS) {
@@ -166,6 +194,7 @@ export async function startAI() {
 
 		syncCanvasSize();
 		isAIDetecting = true;
+		updateDetectionSummary([]);
 		hideOverlay();
 		animationFrame = requestAnimationFrame(detectLoop);
 	} catch (error) {
@@ -175,6 +204,8 @@ export async function startAI() {
 		isLoadingModel = false;
 		startButton.disabled = isAIDetecting;
 		stopButton.disabled = !isAIDetecting;
+		startButton.hidden = isAIDetecting;
+		stopButton.hidden = !isAIDetecting;
 	}
 }
 
@@ -185,5 +216,8 @@ export function stopAI() {
 	context.clearRect(0, 0, canvas.width, canvas.height);
 	startButton.disabled = false;
 	stopButton.disabled = true;
+	startButton.hidden = false;
+	stopButton.hidden = true;
+	updateDetectionSummary([]);
 	hideOverlay();
 }

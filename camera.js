@@ -15,15 +15,22 @@ function updateCameraControls() {
 	const supportsTorch = Boolean(videoTrack?.getCapabilities?.().torch);
 
 	if (startButton) startButton.disabled = hasCamera || isStarting;
-	if (stopButton) stopButton.disabled = !hasCamera;
+	if (startButton) startButton.hidden = hasCamera;
+	if (stopButton) {
+		stopButton.disabled = !hasCamera;
+		stopButton.hidden = !hasCamera;
+	}
 	if (switchButton) {
 		switchButton.disabled = !hasCamera || isStarting;
-		switchButton.textContent = facingMode === "environment" ? "Kamera depan" : "Kamera belakang";
+		switchButton.setAttribute(
+			"aria-label",
+			facingMode === "environment" ? "Beralih ke kamera depan" : "Beralih ke kamera belakang"
+		);
 	}
 	if (torchButton) {
 		torchButton.disabled = !hasCamera || !supportsTorch || isStarting;
-		torchButton.textContent = `Flash: ${torchEnabled ? "Aktif" : "Nonaktif"}`;
 		torchButton.setAttribute("aria-pressed", String(torchEnabled));
+		torchButton.setAttribute("aria-label", `${torchEnabled ? "Matikan" : "Aktifkan"} flash`);
 	}
 }
 
