@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="id">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Object Scanner</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <style>
+            :root {
+                color-scheme: light;
+                --ink: #192821;
+                --muted: #66766d;
+                --line: #d5dfd8;
+                --ground: #f0f4f0;
+                --paper: #ffffff;
+                --green: #14795d;
+                --green-dark: #0b5b45;
+            }
+            * { box-sizing: border-box; }
+            body { margin: 0; background: var(--ground); color: var(--ink); font-family: "DM Sans", "Segoe UI", sans-serif; }
+            button { min-height: 40px; padding: 9px 14px; border: 1px solid var(--line); border-radius: 5px; background: var(--paper); color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
+            button:hover:not(:disabled) { border-color: var(--green); }
+            button:focus-visible { outline: 3px solid #54b998; outline-offset: 2px; }
+            button:disabled { cursor: not-allowed; opacity: 0.48; }
+            .page-shell { width: min(1440px, 100%); margin: auto; padding: 30px clamp(20px, 4vw, 56px) 48px; }
+            .topbar { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
+            .eyebrow { margin: 0 0 7px; color: var(--green); font-size: 12px; font-weight: 700; }
+            h1, h2, p { margin-top: 0; }
+            h1 { margin-bottom: 5px; font-size: 30px; line-height: 1.15; }
+            h2 { margin-bottom: 0; font-size: 20px; }
+            .intro { margin-bottom: 0; color: var(--muted); font-size: 14px; }
+            .mode-badge, .threshold-badge, .count-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 11px; border: 1px solid var(--line); border-radius: 5px; background: var(--paper); color: var(--muted); font-size: 12px; font-weight: 700; white-space: nowrap; }
+            .mode-dot { width: 8px; aspect-ratio: 1; border-radius: 50%; background: var(--green); }
+            .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(290px, 0.8fr); gap: 34px; padding-top: 28px; }
+            .section-heading, .data-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+            .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+            .camera-help { margin: -4px 0 12px; color: var(--muted); font-size: 12px; }
+            #start-ai { border-color: var(--green); background: var(--green); color: white; }
+            #start-ai:hover:not(:disabled) { background: var(--green-dark); }
+            #stop-ai, #stop-camera { color: #8b3e32; }
+            .camera-stage { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border: 1px solid #293b32; border-radius: 6px; background: #101713; }
+            #video, #canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+            #video { object-fit: contain; }
+            #canvas { pointer-events: none; }
+            #overlay-msg { position: absolute; inset: 0; display: grid; align-content: center; justify-items: center; gap: 12px; padding: 20px; color: white; background: rgb(13 24 18 / 78%); text-align: center; }
+            #overlay-msg[hidden] { display: none; }
+            #overlay-text { margin: 0; }
+            .spinner { width: 28px; aspect-ratio: 1; border: 3px solid #ffffff66; border-top-color: #43c99a; border-radius: 50%; animation: spin 0.8s linear infinite; }
+            #app-status { min-height: 22px; margin: 10px 0 0; color: var(--muted); font-size: 13px; }
+            .data-section { min-width: 0; padding-left: 26px; border-left: 1px solid var(--line); }
+            .data-header { align-items: end; }
+            .count-badge { color: var(--green-dark); }
+            .helper { margin: -5px 0 14px; color: var(--muted); font-size: 13px; }
+            #data-list { display: grid; max-height: 540px; overflow: auto; }
+            .log-item { display: grid; gap: 5px; padding: 13px 4px; border-top: 1px solid var(--line); }
+            .log-item strong { font-size: 14px; }
+            .log-time { color: var(--muted); font-size: 12px; }
+            .empty-state { padding: 20px 0; color: var(--muted); font-size: 14px; }
+            @keyframes spin { to { transform: rotate(360deg); } }
+            @media (max-width: 820px) {
+                .dashboard-grid { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+                .data-section { padding: 22px 0 0; border-top: 1px solid var(--line); border-left: 0; }
+                #data-list { max-height: 280px; }
+            }
+            @media (max-width: 520px) {
+                .page-shell { padding: 22px 16px 32px; }
+                .topbar { align-items: start; flex-direction: column; }
+                h1 { font-size: 26px; }
+                .section-heading { align-items: start; flex-direction: column; }
+                .controls button { flex: 1 1 calc(50% - 8px); }
+                .camera-stage { aspect-ratio: 4 / 3; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="page-shell">
+            <header class="topbar">
+                <div>
+                    <p class="eyebrow">VISION INVENTORY / LIVE SCANNER</p>
+                    <h1>Deteksi Objek</h1>
+                    <p class="intro">COCO-SSD mengenali orang dan objek umum melalui kamera.</p>
+                </div>
+                <span id="database-mode" class="mode-badge"><span class="mode-dot"></span> Menghubungkan database</span>
+            </header>
+
+            <main class="dashboard-grid">
+                <section class="camera-panel" aria-labelledby="camera-title">
+                    <div class="section-heading">
+                        <div>
+                            <p class="eyebrow">LIVE FEED</p>
+                            <h2 id="camera-title">Kamera & deteksi</h2>
+                        </div>
+                        <span class="threshold-badge">Confidence minimal 40%</span>
+                    </div>
+                    <div class="controls">
+                        <button id="start-camera" type="button">Aktifkan kamera</button>
+                        <button id="stop-camera" type="button">Matikan kamera</button>
+                        <button id="switch-camera" type="button" disabled>Kamera depan</button>
+                        <button id="toggle-torch" type="button" aria-pressed="false" disabled>Flash: Nonaktif</button>
+                        <button id="start-ai" type="button">Start AI</button>
+                        <button id="stop-ai" type="button" disabled>Stop AI</button>
+                    </div>
+                    <p class="camera-help">Izinkan akses kamera. Flash tersedia jika didukung perangkat; halaman harus dibuka melalui HTTPS atau localhost.</p>
+                    <div id="camera-container" class="camera-stage">
+                        <video id="video" autoplay playsinline muted></video>
+                        <canvas id="canvas"></canvas>
+                        <div id="overlay-msg" role="status" hidden>
+                            <div class="spinner" aria-hidden="true"></div>
+                            <p id="overlay-text"></p>
+                        </div>
+                    </div>
+                    <p id="app-status" role="status" aria-live="polite">Menyiapkan aplikasi...</p>
+                </section>
+
+                <aside class="data-section" aria-labelledby="data-title">
+                    <header class="data-header">
+                        <div>
+                            <p class="eyebrow">REAL-TIME</p>
+                            <h2 id="data-title">Riwayat deteksi</h2>
+                        </div>
+                        <span class="count-badge"><span id="log-count">0</span> item</span>
+                    </header>
+                    <p class="helper">Hasil target terbaru, maksimal 20 catatan.</p>
+                    <div id="data-list" aria-live="polite">
+                        <p class="empty-state">Belum ada objek terdeteksi.</p>
+                    </div>
+                </aside>
+            </main>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+
+        <script type="module">
+            import { app, db, isMockMode, listenForDetections } from "./db.js";
+            import { startCamera, stopCamera, switchCamera, toggleTorch } from "./camera.js";
+            import { loadModel, startAI, stopAI } from "./ai.js";
+
+            const dataList = document.getElementById("data-list");
+            const logCount = document.getElementById("log-count");
+            const appStatus = document.getElementById("app-status");
+            const databaseMode = document.getElementById("database-mode");
+
+            function renderDetections(records) {
+                dataList.replaceChildren();
+                logCount.textContent = String(records.length);
+
+                if (records.length === 0) {
+                    const emptyMessage = document.createElement("p");
+                    emptyMessage.className = "empty-state";
+                    emptyMessage.textContent = "Belum ada objek terdeteksi.";
+                    dataList.appendChild(emptyMessage);
+                    return;
+                }
+
+                records.forEach((record) => {
+                    const item = document.createElement("article");
+                    item.className = "log-item";
+
+                    const summary = document.createElement("strong");
+                    summary.textContent = record.items || `${record.count || 0} objek terdeteksi`;
+
+                    const details = document.createElement("span");
+                    details.className = "log-time";
+                    const timestamp = record.timestamp?.toDate
+                        ? record.timestamp.toDate()
+                        : new Date(record.timestamp);
+                    const formattedTime = Number.isNaN(timestamp.getTime())
+                        ? "Waktu tidak tersedia"
+                        : timestamp.toLocaleString("id-ID");
+                    details.textContent = `${record.deviceId || "Perangkat"} | ${formattedTime}`;
+
+                    item.append(summary, details);
+                    dataList.appendChild(item);
+                });
+            }
+
+            async function initApp() {
+                databaseMode.innerHTML = `<span class="mode-dot"></span> ${isMockMode ? "Mock · LocalStorage" : "Firebase · Cloud"}`;
+                console.log(isMockMode ? "Mock database initialized:" : "Firebase initialized:", isMockMode ? db : app);
+                listenForDetections(renderDetections, (error) => {
+                    console.error("Gagal memuat riwayat deteksi:", error);
+                    appStatus.textContent = "Gagal memuat riwayat database.";
+                });
+
+                try {
+                    await loadModel();
+                    appStatus.textContent = "Model AI siap. Aktifkan kamera atau mulai deteksi.";
+                } catch (error) {
+                    console.error("Inisialisasi model AI gagal:", error);
+                    appStatus.textContent = "Model AI gagal dimuat. Periksa koneksi internet.";
+                }
+            }
+
+            async function handleCameraAction(action, successMessage) {
+                try {
+                    await action();
+                    if (successMessage) appStatus.textContent = successMessage;
+                } catch (error) {
+                    console.error("Aksi kamera gagal:", error);
+                    appStatus.textContent = error.message || "Aksi kamera gagal.";
+                }
+            }
+
+            document.getElementById("start-camera").addEventListener("click", () => {
+                void handleCameraAction(startCamera, "Kamera aktif.");
+            });
+            document.getElementById("stop-camera").addEventListener("click", () => {
+                stopAI();
+                stopCamera();
+                appStatus.textContent = "Kamera dimatikan.";
+            });
+            document.getElementById("switch-camera").addEventListener("click", () => {
+                void handleCameraAction(switchCamera, "Kamera berhasil diganti.");
+            });
+            document.getElementById("toggle-torch").addEventListener("click", () => {
+                void handleCameraAction(toggleTorch, "Pengaturan flash diperbarui.");
+            });
+            document.getElementById("start-ai").addEventListener("click", startAI);
+            document.getElementById("stop-ai").addEventListener("click", stopAI);
+
+            void initApp();
+        </script>
+    </body>
+</html>
